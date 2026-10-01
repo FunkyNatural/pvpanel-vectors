@@ -27,6 +27,8 @@
   .sl .row{display:flex;justify-content:space-between;align-items:center;font-size:13.5px;margin-bottom:3px}
   .sl .row .val{display:flex;gap:6px;align-items:baseline}
   .sl .row b{color:var(--acc);font-variant-numeric:tabular-nums}
+  .sl .row .val b{min-width:52px;text-align:right}   /* fixed width keeps the number-input arrows steady */
+  #vG{min-width:108px;text-align:right}
   input[type=range]{width:100%;accent-color:var(--acc);margin:0}
   .num{width:58px;background:#0b1220;border:1px solid var(--line);border-radius:6px;color:var(--txt);
        font:13px/1.2 system-ui;font-variant-numeric:tabular-nums;padding:3px 5px;text-align:right}
@@ -66,15 +68,15 @@
         <span class="val"><input type="number" id="inGn" class="num" min="-180" max="180" step="0.5" value="0"><b id="vG">0°</b></span></span>
         <input type="range" id="inG" min="-180" max="180" step="0.5" value="0"></label>
       <label class="sl"><span class="row"><span>Roof tilt α</span>
-        <span class="val"><input type="number" id="inAn" class="num" min="1" max="60" step="0.5" value="30"><b id="vA">30°</b></span></span>
-        <input type="range" id="inA" min="1" max="60" step="0.5" value="30"></label>
+        <span class="val"><input type="number" id="inAn" class="num" min="5" max="60" step="0.5" value="30"><b id="vA">30°</b></span></span>
+        <input type="range" id="inA" min="5" max="60" step="0.5" value="30"></label>
       <label class="sl"><span class="row"><span>Mounting-kit tilt β</span>
         <span class="val"><input type="number" id="inBn" class="num" min="0" max="30" step="0.5" value="10"><b id="vB">10°</b></span></span>
         <input type="range" id="inB" min="0" max="30" step="0.5" value="10"></label>
       <div style="height:1px;background:var(--line);margin:12px 0"></div>
       <label class="sl"><span class="row"><span>View tilt</span>
-        <span class="val"><input type="number" id="inPn" class="num" min="8" max="70" step="1" value="24"><b id="vP">24°</b></span></span>
-        <input type="range" id="inP" min="8" max="70" step="1" value="24"></label>
+        <span class="val"><input type="number" id="inPn" class="num" min="8" max="70" step="0.5" value="24"><b id="vP">24°</b></span></span>
+        <input type="range" id="inP" min="8" max="70" step="0.5" value="24"></label>
     </div>
 
     <div class="card">
@@ -257,8 +259,8 @@ function drawModule(quad, front){
 function draw(){
   const G=+$('inG').value, a=+$('inA').value, b=+$('inB').value;
   const pv=+$('inP').value;
-  $('vG').textContent=G+'° ('+cardinal(G)+')'; $('vA').textContent=a+'°'; $('vB').textContent=b+'°';
-  $('vP').textContent=pv+'°';
+  $('vG').textContent=G.toFixed(1)+'° ('+cardinal(G)+')'; $('vA').textContent=a.toFixed(1)+'°'; $('vB').textContent=b.toFixed(1)+'°';
+  $('vP').textContent=pv.toFixed(1)+'°';
 
   const res = compute(G,a,b);
   cam={S:62,cx:292,cy:298,sp:Math.sin(rad(pv)),cp:Math.cos(rad(pv))};
@@ -399,7 +401,7 @@ for(const [k, min, max] of PARAMS){
   n.addEventListener('change', ()=>{
     let v = parseFloat(n.value);
     if(!isFinite(v)) v = +r.value;              // restore if left empty/invalid
-    n.value = Math.round(Math.min(max, Math.max(min, v)));
+    n.value = Math.round(Math.min(max, Math.max(min, v))*2)/2;
     r.value = n.value; draw();
   });
 }
