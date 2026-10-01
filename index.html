@@ -394,7 +394,7 @@ for(const [k, min, max] of PARAMS){
   n.addEventListener('input', ()=>{
     const v = parseFloat(n.value);
     if(!isFinite(v)) return;                    // while clearing the box
-    if(v >= min && v <= max){ r.value = Math.round(v); draw(); }  // sync while in range
+    if(v >= min && v <= max){ r.value = Math.round(v*2)/2; draw(); }  // sync while in range
   });
   n.addEventListener('change', ()=>{
     let v = parseFloat(n.value);
