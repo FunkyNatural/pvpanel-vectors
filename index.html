@@ -68,8 +68,8 @@
         <span class="val"><input type="number" id="inGn" class="num" min="-180" max="180" step="0.5" value="0"><b id="vG">0°</b></span></span>
         <input type="range" id="inG" min="-180" max="180" step="0.5" value="0"></label>
       <label class="sl"><span class="row"><span>Roof tilt α</span>
-        <span class="val"><input type="number" id="inAn" class="num" min="5" max="60" step="0.5" value="30"><b id="vA">30°</b></span></span>
-        <input type="range" id="inA" min="5" max="60" step="0.5" value="30"></label>
+        <span class="val"><input type="number" id="inAn" class="num" min="0" max="60" step="0.5" value="30"><b id="vA">30°</b></span></span>
+        <input type="range" id="inA" min="0" max="60" step="0.5" value="30"></label>
       <label class="sl"><span class="row"><span>Mounting-kit tilt β</span>
         <span class="val"><input type="number" id="inBn" class="num" min="0" max="30" step="0.5" value="10"><b id="vB">10°</b></span></span>
         <input type="range" id="inB" min="0" max="30" step="0.5" value="10"></label>
@@ -116,7 +116,7 @@
     </div>
   </section>
 </main>
-<footer>Pure client-side demo with no dependencies. Orientation math lives in <code>pv-math.js</code>.</footer>
+<footer>Pure client-side demo with no dependencies. Orientation math lives in <code>pv-math.js</code>; run <code>node test/render.test.js</code> for the test suite.</footer>
 
 <script src="pv-math.js"></script>
 <script>
@@ -388,7 +388,7 @@ function draw(){
 
 // ---- two-way binding: range slider <-> number input ----
 const PARAMS = [
-  ['G', -180, 180], ['A', 5, 60], ['B', 0, 30], ['P', 8, 70]
+  ['G', -180, 180], ['A', 0, 60], ['B', 0, 30], ['P', 8, 70]
 ];
 for(const [k, min, max] of PARAMS){
   const r = $('in'+k), n = $('in'+k+'n');
