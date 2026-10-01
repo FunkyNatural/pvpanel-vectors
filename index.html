@@ -1,0 +1,410 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+<meta charset="utf-8">
+<meta name="viewport" content="width=device-width, initial-scale=1">
+<title>PV Module Orientation — roof + mounting kit</title>
+<style>
+  :root{
+    --bg:#0f172a; --card:#1e293b; --card2:#23324a; --line:#334155;
+    --txt:#e2e8f0; --dim:#94a3b8; --acc:#fbbf24; --west:#3b82f6; --east:#f59e0b;
+    --shadow:0 1px 2px rgba(0,0,0,.3), 0 8px 24px rgba(0,0,0,.22);
+  }
+  *{box-sizing:border-box}
+  body{margin:0;background:var(--bg);color:var(--txt);
+       font:15px/1.45 system-ui,-apple-system,"Segoe UI",Roboto,sans-serif;padding:20px 24px 40px}
+  header{max-width:1080px;margin:0 auto 20px}
+  header h1{margin:0 0 6px;font-size:24px;font-weight:700;letter-spacing:-.01em}
+  header .sub{margin:0 0 9px;color:var(--txt);font-size:14.5px;opacity:.82;max-width:740px}
+  header .conv{margin:0;color:var(--dim);font-size:12.5px}
+  main{max-width:1080px;margin:0 auto;display:flex;gap:18px;flex-wrap:wrap;align-items:flex-start}
+  .viz{flex:1 1 600px;min-width:420px}
+  canvas{display:block;width:100%;height:auto;background:#0b1220;border:1px solid var(--line);border-radius:12px;box-shadow:var(--shadow)}
+  .panel{flex:1 1 340px;min-width:320px;display:flex;flex-direction:column;gap:14px}
+  .card{background:var(--card);border:1px solid var(--line);border-radius:12px;padding:16px 18px;box-shadow:var(--shadow)}
+  .card h2{margin:0 0 10px;font-size:13px;text-transform:uppercase;letter-spacing:.08em;color:var(--dim)}
+  .sl{display:block;margin:9px 0}
+  .sl .row{display:flex;justify-content:space-between;align-items:center;font-size:13.5px;margin-bottom:3px}
+  .sl .row .val{display:flex;gap:6px;align-items:baseline}
+  .sl .row b{color:var(--acc);font-variant-numeric:tabular-nums}
+  input[type=range]{width:100%;accent-color:var(--acc);margin:0}
+  .num{width:58px;background:#0b1220;border:1px solid var(--line);border-radius:6px;color:var(--txt);
+       font:13px/1.2 system-ui;font-variant-numeric:tabular-nums;padding:3px 5px;text-align:right}
+  .num:focus{outline:none;border-color:var(--acc)}
+  .side{display:flex;gap:10px;align-items:flex-start}
+  .side + .side{margin-top:12px;padding-top:12px;border-top:1px solid var(--line)}
+  .dot{width:12px;height:12px;border-radius:50%;margin-top:6px;flex:none}
+  .dot.w{background:var(--west)} .dot.e{background:var(--east)}
+  .side .body{flex:1}
+  .side .title{font-weight:600;font-size:14px}
+  .big{display:flex;gap:18px;margin:6px 0 2px}
+  .big div{font-size:13px;color:var(--dim)}
+  .big b{display:block;font-size:20px;color:var(--txt);font-variant-numeric:tabular-nums}
+  .kv{font-size:12.5px;color:var(--dim);font-variant-numeric:tabular-nums}
+  .kv span{color:var(--txt)}
+  code, .mono{font-family:ui-monospace,Menlo,Consolas,monospace;font-size:12.5px}
+  .fline{margin:5px 0;font-size:13px}
+  .fline .mono{color:var(--acc)}
+  .note{font-size:12px;color:var(--dim);margin-top:8px}
+  footer{max-width:1080px;margin:20px auto 0;color:#64748b;font-size:12px;padding-top:14px;border-top:1px solid var(--line)}
+</style>
+</head>
+<body>
+<header>
+  <h1>PV Module Orientation</h1>
+  <p class="sub">Effective facing &amp; tilt for rooftop solar modules on a pitched roof with a mounting-kit tilt — three inputs, closed-form math, and a live 3-D view.</p>
+  <p class="conv">Azimuth convention: <code>0° = S</code> · <code>−90° = E</code> · <code>+90° = W</code> · <code>±180° = N</code>. Panels tilt by the mounting-kit angle β toward the gable direction.</p>
+</header>
+<main>
+  <section class="viz">
+    <canvas id="cv"></canvas>
+  </section>
+  <section class="panel">
+    <div class="card">
+      <h2>Inputs</h2>
+      <label class="sl"><span class="row"><span>Gable facing direction</span>
+        <span class="val"><input type="number" id="inGn" class="num" min="-180" max="180" step="1" value="0"><b id="vG">0°</b></span></span>
+        <input type="range" id="inG" min="-180" max="180" step="1" value="0"></label>
+      <label class="sl"><span class="row"><span>Roof tilt α</span>
+        <span class="val"><input type="number" id="inAn" class="num" min="5" max="60" step="1" value="30"><b id="vA">30°</b></span></span>
+        <input type="range" id="inA" min="5" max="60" step="1" value="30"></label>
+      <label class="sl"><span class="row"><span>Mounting-kit tilt β</span>
+        <span class="val"><input type="number" id="inBn" class="num" min="0" max="30" step="1" value="10"><b id="vB">10°</b></span></span>
+        <input type="range" id="inB" min="0" max="30" step="1" value="10"></label>
+      <div style="height:1px;background:var(--line);margin:12px 0"></div>
+      <label class="sl"><span class="row"><span>View tilt</span>
+        <span class="val"><input type="number" id="inPn" class="num" min="8" max="70" step="1" value="24"><b id="vP">24°</b></span></span>
+        <input type="range" id="inP" min="8" max="70" step="1" value="24"></label>
+    </div>
+
+    <div class="card">
+      <h2>Result — PV modules</h2>
+      <div class="side">
+        <div class="dot w"></div>
+        <div class="body">
+          <div class="title" id="tW">West side</div>
+          <div class="big">
+            <div>Effective facing <b id="wF">–</b></div>
+            <div>Effective tilt <b id="wT">–</b></div>
+          </div>
+          <div class="kv">roof-plane facing: <span id="wP">–</span></div>
+          <div class="kv">normal (N, E, up): <span id="wN">–</span></div>
+        </div>
+      </div>
+      <div class="side">
+        <div class="dot e"></div>
+        <div class="body">
+          <div class="title" id="tE">East side</div>
+          <div class="big">
+            <div>Effective facing <b id="eF">–</b></div>
+            <div>Effective tilt <b id="eT">–</b></div>
+          </div>
+          <div class="kv">roof-plane facing: <span id="eP">–</span></div>
+          <div class="kv">normal (N, E, up): <span id="eN">–</span></div>
+        </div>
+      </div>
+    </div>
+
+    <div class="card">
+      <h2>Formula (closed form)</h2>
+      <div class="fline"><span class="mono" id="f1"></span></div>
+      <div class="fline"><span class="mono" id="f2"></span></div>
+      <div class="fline"><span class="mono" id="f3"></span></div>
+      <div class="note">γ depends only on α, β; δ rotates each roof-plane facing toward the gable direction by the same amount. The 3-D view is driven by the vector form <code>n = cosβ·n_roof + sinβ·ĝ</code>.</div>
+    </div>
+  </section>
+</main>
+<footer>Pure client-side demo with no dependencies. Orientation math lives in <code>pv-math.js</code>; run <code>node test/render.test.js</code> for the test suite.</footer>
+
+<script src="pv-math.js"></script>
+<script>
+"use strict";
+const $ = id => document.getElementById(id);
+const cv = $('cv'), ctx = cv.getContext('2d');
+const CW = 660, CH = 480, DPR = Math.min(2, window.devicePixelRatio || 1);
+cv.width = CW*DPR; cv.height = CH*DPR; ctx.scale(DPR, DPR);
+
+function lerp3(a,b,t){ return [a[0]+(b[0]-a[0])*t, a[1]+(b[1]-a[1])*t, a[2]+(b[2]-a[2])*t]; }
+
+let cam = {S:62, cx:300, cy:300, cp:0, sp:0};
+function P(n,e,z){ return [cam.cx + e*cam.S, cam.cy - (n*cam.sp + z*cam.cp)*cam.S]; }
+
+// geometry helper
+const nrm2 = v => { const l = Math.hypot(v[0],v[1])||1; return [v[0]/l,v[1]/l]; };
+
+function geom(G, a){
+  const W=2.4, D=3.4, He=1.9, Wt=W/2, Dt=D/2;
+  const Hg = He + Wt*Math.tan(rad(a));
+  // A plane = -wW side (faces G-90), B plane = +wW side (faces G+90);
+  // uA/uB point from the ridge down-slope to the A/B eaves
+  const g = h(G), wW = h(G+90), uA = h(G-90), uB = h(G+90);
+  const Ce=[0,0,He];
+  const E1=[Ce[0]+wW[0]*Wt+g[0]*Dt, Ce[1]+wW[1]*Wt+g[1]*Dt, He];
+  const E2=[Ce[0]-wW[0]*Wt+g[0]*Dt, Ce[1]-wW[1]*Wt+g[1]*Dt, He];
+  const E3=[Ce[0]+wW[0]*Wt-g[0]*Dt, Ce[1]+wW[1]*Wt-g[1]*Dt, He];
+  const E4=[Ce[0]-wW[0]*Wt-g[0]*Dt, Ce[1]-wW[1]*Wt-g[1]*Dt, He];
+  const R1=[g[0]*Dt, g[1]*Dt, Hg], R2=[-g[0]*Dt, -g[1]*Dt, Hg];
+  // module quad lying ON the roof plane: point(λ,s) = u·λ + g·s, z = Hg − λ·tanα
+  // (λ = horizontal distance down-slope from the ridge; eave at λ = Wt = 1.2)
+  const m = (u, l0, s0, dL, dW)=>{
+    const l1=l0+dL, pt=(l,s)=>[u[0]*l+g[0]*s, u[1]*l+g[1]*s, Hg-l*Math.tan(rad(a))];
+    return [ pt(l0,s0), pt(l0,s0+dW), pt(l1,s0+dW), pt(l1,s0) ];
+  };
+  return {W,D,He,Hg,g,wW,uA,uB,
+    roofA:[E2,E4,R2,R1], modA:m(uA,0.15,-0.68,0.90,1.36),
+    roofB:[E1,E3,R2,R1], modB:m(uB,0.15,-0.68,0.90,1.36),
+    wallN:[[-wW[0]*Wt+g[0]*Dt,-wW[1]*Wt+g[1]*Dt,0],[-wW[0]*Wt-g[0]*Dt,-wW[1]*Wt-g[1]*Dt,0],
+           [-wW[0]*Wt-g[0]*Dt,-wW[1]*Wt-g[1]*Dt,He],[-wW[0]*Wt+g[0]*Dt,-wW[1]*Wt+g[1]*Dt,He]],
+    wallS:[[ wW[0]*Wt+g[0]*Dt, wW[1]*Wt+g[1]*Dt,0],[ wW[0]*Wt-g[0]*Dt, wW[1]*Wt-g[1]*Dt,0],
+           [ wW[0]*Wt-g[0]*Dt, wW[1]*Wt-g[1]*Dt,He],[ wW[0]*Wt+g[0]*Dt, wW[1]*Wt+g[1]*Dt,He]],
+    gableN:[[ wW[0]*Wt-g[0]*Dt, wW[1]*Wt-g[1]*Dt,0],[-wW[0]*Wt-g[0]*Dt,-wW[1]*Wt-g[1]*Dt,0],
+            [-wW[0]*Wt-g[0]*Dt,-wW[1]*Wt-g[1]*Dt,He],[-g[0]*Dt,-g[1]*Dt,Hg],[ wW[0]*Wt-g[0]*Dt, wW[1]*Wt-g[1]*Dt,He]],
+    gableS:[[ wW[0]*Wt+g[0]*Dt, wW[1]*Wt+g[1]*Dt,0],[-wW[0]*Wt+g[0]*Dt,-wW[1]*Wt+g[1]*Dt,0],
+            [-wW[0]*Wt+g[0]*Dt,-wW[1]*Wt+g[1]*Dt,He],[ g[0]*Dt, g[1]*Dt,Hg],[ wW[0]*Wt+g[0]*Dt, wW[1]*Wt+g[1]*Dt,He]]};
+}
+
+function poly(pts, fill, stroke, lw){
+  ctx.beginPath();
+  pts.forEach((p,i)=>{ const s=P(p[0],p[1],p[2]); i?ctx.lineTo(s[0],s[1]):ctx.moveTo(s[0],s[1]); });
+  ctx.closePath();
+  if(fill){ctx.fillStyle=fill;ctx.fill();}
+  if(stroke){ctx.strokeStyle=stroke;ctx.lineWidth=lw||1;ctx.stroke();}
+}
+function line3(a,b,color,lw,dash){
+  const s1=P(a[0],a[1],a[2]), s2=P(b[0],b[1],b[2]);
+  ctx.beginPath();ctx.moveTo(s1[0],s1[1]);ctx.lineTo(s2[0],s2[1]);
+  ctx.strokeStyle=color;ctx.lineWidth=lw||1.5;
+  ctx.setLineDash(dash||[]);ctx.stroke();ctx.setLineDash([]);
+}
+function arrow3(from, dir, len, color, lw, dash){
+  const to=[from[0]+dir[0]*len, from[1]+dir[1]*len, from[2]+dir[2]*len];
+  line3(from,to,color,lw,dash);
+  const s1=P(from[0],from[1],from[2]), s2=P(to[0],to[1],to[2]);
+  const ang=Math.atan2(s2[1]-s1[1],s2[0]-s1[0]), hs=8;
+  ctx.beginPath();
+  ctx.moveTo(s2[0],s2[1]);
+  ctx.lineTo(s2[0]-hs*Math.cos(ang-0.42), s2[1]-hs*Math.sin(ang-0.42));
+  ctx.moveTo(s2[0],s2[1]);
+  ctx.lineTo(s2[0]-hs*Math.cos(ang+0.42), s2[1]-hs*Math.sin(ang+0.42));
+  ctx.strokeStyle=color;ctx.lineWidth=lw||2;ctx.stroke();
+  return [s2[0],s2[1]];
+}
+function text(s,x,y,color,font,align){
+  ctx.fillStyle=color||'#cbd5e1';ctx.font=font||'11px system-ui';
+  ctx.textAlign=align||'center';ctx.textBaseline='middle';ctx.fillText(s,x,y);
+}
+
+function compass(cx,cy,R,o){
+  // bg + ring
+  ctx.beginPath();ctx.arc(cx,cy,R,0,7);ctx.fillStyle='rgba(15,23,42,.55)';ctx.fill();
+  ctx.strokeStyle='#334155';ctx.lineWidth=1.5;ctx.stroke();
+  // ticks (azimuth on screen: dx=-sin, dy=+cos → 0°=S down, +90°=W left)
+  for(let k=0;k<12;k++){
+    const az=k*30, dx=-Math.sin(rad(az)), dy=Math.cos(rad(az));
+    const r1=(k%3===0)?R-9:R-5;
+    ctx.beginPath();ctx.moveTo(cx+dx*r1,cy+dy*r1);ctx.lineTo(cx+dx*(R-1),cy+dy*(R-1));
+    ctx.strokeStyle=k%3===0?'#94a3b8':'#475569';ctx.lineWidth=k%3===0?2:1;ctx.stroke();
+  }
+  text('N',cx,cy-R-11,'#e2e8f0','bold 13px system-ui');
+  text('S',cx,cy+R+12,'#94a3b8','12px system-ui');
+  text('E',cx+R+11,cy,'#94a3b8','12px system-ui');
+  text('W',cx-R-11,cy,'#94a3b8','12px system-ui');
+  // ridge axis (= gable direction)
+  const rx=-Math.sin(rad(o.G))*(R-2), ry=Math.cos(rad(o.G))*(R-2);
+  ctx.beginPath();ctx.moveTo(cx-rx,cy-ry);ctx.lineTo(cx+rx,cy+ry);
+  ctx.strokeStyle='rgba(148,163,184,.5)';ctx.lineWidth=1.5;ctx.setLineDash([5,4]);ctx.stroke();ctx.setLineDash([]);
+  text('ridge',cx+rx*0.82+ (rx<0?-16:16), cy+ry*0.82, 'rgba(148,163,184,.8)','10px system-ui', rx<0?'right':'left');
+  // module facing arrows
+  const mk=(az,col,label)=>{
+    const dx=-Math.sin(rad(az)), dy=Math.cos(rad(az));
+    ctx.beginPath();ctx.moveTo(cx,cy);
+    const ex=cx+dx*(R-14), ey=cy+dy*(R-14);
+    ctx.lineTo(ex,ey);ctx.strokeStyle=col;ctx.lineWidth=3.5;ctx.stroke();
+    const a2=Math.atan2(dy,dx);
+    ctx.beginPath();ctx.moveTo(ex,ey);
+    ctx.lineTo(ex-9*Math.cos(a2-0.45),ey-9*Math.sin(a2-0.45));
+    ctx.moveTo(ex,ey);ctx.lineTo(ex-9*Math.cos(a2+0.45),ey-9*Math.sin(a2+0.45));
+    ctx.stroke();
+    text(label, cx+dx*(R-2)+ (dx>0.3?8:dx<-0.3?-8:0), cy+dy*(R-2)+(dy>0.3?8:dy<-0.3?-8:0), col,'bold 12px system-ui');
+  };
+  mk(o.westFacing,'#3b82f6','W');
+  mk(o.eastFacing,'#f59e0b','E');
+}
+
+function drawModule(quad, front){
+  const [M1,M2,M3,M4]=quad;
+  // bilinear point on the quad: t goes up-slope(0)→down-slope(1), f goes s0(0)→s1(1)
+  const B=(t,f)=>[
+    (1-t)*(1-f)*M1[0]+(1-t)*f*M2[0]+t*f*M3[0]+t*(1-f)*M4[0],
+    (1-t)*(1-f)*M1[1]+(1-t)*f*M2[1]+t*f*M3[1]+t*(1-f)*M4[1],
+    (1-t)*(1-f)*M1[2]+(1-t)*f*M2[2]+t*f*M3[2]+t*(1-f)*M4[2]
+  ];
+  if(front){
+    // FRONT: blue solar cells on the module frame
+    poly(quad,'#2f66ad','#dbe4ee',2.5);
+    ctx.strokeStyle='rgba(255,255,255,.22)';ctx.lineWidth=1;
+    for(let i=1;i<4;i++) line3(lerp3(M1,M4,i/4), lerp3(M2,M3,i/4), 'rgba(255,255,255,.22)',1);
+    for(let j=1;j<6;j++) line3(lerp3(M1,M2,j/6), lerp3(M4,M3,j/6), 'rgba(255,255,255,.22)',1);
+  } else {
+    // BACK: bare aluminum frame + junction box (no cells)
+    poly(quad,'#9aa7b4','#5b6675',2);
+    poly([B(.07,.07),B(.07,.93),B(.93,.93),B(.93,.07)],null,'#7f8b99',1.2);   // inner frame
+    poly([B(.66,.30),B(.66,.70),B(.94,.70),B(.94,.30)],'#3a4654','#2a333d',1);   // junction box (down-slope edge)
+    line3(B(.80,.5), B(.60,.5), '#2a333d', 1.5);                                 // conduit stub
+  }
+}
+
+function draw(){
+  const G=+$('inG').value, a=+$('inA').value, b=+$('inB').value;
+  const pv=+$('inP').value;
+  $('vG').textContent=G+'° ('+cardinal(G)+')'; $('vA').textContent=a+'°'; $('vB').textContent=b+'°';
+  $('vP').textContent=pv+'°';
+
+  const res = compute(G,a,b);
+  cam={S:62,cx:292,cy:298,sp:Math.sin(rad(pv)),cp:Math.cos(rad(pv))};
+  // camera sits south of the house, elevated by pv, looking north & down.
+  // view (camera→scene) ≈ (cp,0,−sp); depth (farther = larger) = p·(cp,0,−sp)  [uses N]
+  const depth=p=>p.reduce((s,v)=>s+v[0]*cam.cp-v[2]*cam.sp,0)/p.length;
+  // a face is visible when its outward normal points toward the camera (−cp,0,sp):  [uses N]
+  const visible=n=>(-n[0]*cam.cp+n[2]*cam.sp)>0.002;
+
+  ctx.clearRect(0,0,CW,CH);
+  // sky
+  const sky=ctx.createLinearGradient(0,0,0,CH);
+  sky.addColorStop(0,'#16233c');sky.addColorStop(1,'#0b1220');
+  ctx.fillStyle=sky;ctx.fillRect(0,0,CW,CH);
+
+  const Gm=geom(G,a);
+  // ground
+  poly([[-2.3,-2.7,0],[-2.3,2.7,0],[2.3,2.7,0],[2.3,-2.7,0]],'rgba(120,140,110,.16)','#2b3a4d',1);
+  // shadow
+  poly([[Gm.wW[0]*1.2+Gm.g[0]*2, Gm.wW[1]*1.2+Gm.g[1]*2,0],
+        [-Gm.wW[0]*1.2+Gm.g[0]*2,-Gm.wW[1]*1.2+Gm.g[1]*2,0],
+        [-Gm.wW[0]*1.2-Gm.g[0]*2,-Gm.wW[1]*1.2-Gm.g[1]*2,0],
+        [Gm.wW[0]*1.2-Gm.g[0]*2, Gm.wW[1]*1.2-Gm.g[1]*2,0]],'rgba(2,6,23,.35)',null);
+
+  // Tilt each module by β around its own hinge axis — the line of intersection between
+  // the roof plane and the tilted panel plane (⊥ to both normals). Each module has its
+  // own mirror-image axis, so the two panels turn in opposite directions. The up-slope
+  // edge (λ = l0) stays anchored on the roof; the down-slope edge lifts off.
+  const nRoofA = roofNormal(res.phiA, a), nRoofB = roofNormal(res.phiB, a);
+  const nPvA = res.sides[res.westIsA ? 'west' : 'east'].n;
+  const nPvB = res.sides[res.westIsA ? 'east' : 'west'].n;
+  const bRad=rad(b), cB=Math.cos(bRad), sB=Math.sin(bRad);
+  const l0=0.15, tanA=Math.tan(rad(a));
+  const tiltMod=(quad,u,nRoof,nPv)=>{
+    const ax=V.norm(V.cross(nRoof,nPv));               // hinge axis: ⊥ to both planes
+    const H=[u[0]*l0, u[1]*l0, Gm.Hg - l0*tanA];       // center of up-slope edge
+    // rotate the quad around the hinge axis by β
+    const tq=quad.map(p=>{
+      const q=[p[0]-H[0], p[1]-H[1], p[2]-H[2]];
+      const aq=V.cross(ax,q);
+      const aqd=V.dot(ax,q);
+      const k=1-cB;
+      return [
+        H[0]+ q[0]*cB + aq[0]*sB + ax[0]*aqd*k,
+        H[1]+ q[1]*cB + aq[1]*sB + ax[1]*aqd*k,
+        H[2]+ q[2]*cB + aq[2]*sB + ax[2]*aqd*k
+      ];
+    });
+    // lift the whole panel off the roof so no corner sinks below the surface
+    let minD=Infinity;
+    for(const p of tq) minD=Math.min(minD, V.dot(V.sub(p,H), nRoof));
+    const lift=-Math.min(0,minD);
+    if(lift>0) for(let i=0;i<tq.length;i++) tq[i]=V.add(tq[i], V.mul(nRoof,lift));
+    return tq;
+  };
+  const modA=tiltMod(Gm.modA, Gm.uA, nRoofA, nPvA);
+  const modB=tiltMod(Gm.modB, Gm.uB, nRoofB, nPvB);
+
+  // faces with painter's sort (outward normals, consistent with the azimuth convention)
+  // roofA = A plane (-wW side, facing phiA), roofB = B plane (+wW side, facing phiB)
+  // each module is culled by its OWN panel normal (nPv), not the roof-plane normal,
+  // because the panel is physically tilted β from the roof — its visible side can
+  // differ from the roof's when the roof is near edge-on to the camera.
+  const wSide = res.westIsA ? 'west' : 'east', eSide = res.westIsA ? 'east' : 'west';
+  // Each module has a front (cells) and a back (frame + junction box).
+  // Only one is visible at a time — backface culling on the panel normal handles it.
+  const faces=[
+    {pts:Gm.roofA, fill:'#f5f8fc', edge:'#9fb0c2', n:nRoofA},
+    {pts:Gm.roofB, fill:'#eef3f9', edge:'#9fb0c2', n:nRoofB},
+    {pts:modA,  mod:true, front:true,  n:nPvA,               bias:-0.05},
+    {pts:modA,  mod:true, front:false, n:[-nPvA[0],-nPvA[1],-nPvA[2]], bias:-0.05},
+    {pts:modB,  mod:true, front:true,  n:nPvB,               bias:-0.05},
+    {pts:modB,  mod:true, front:false, n:[-nPvB[0],-nPvB[1],-nPvB[2]], bias:-0.05},
+    {pts:Gm.wallN, fill:'#e2dccf', edge:'#a89f90', n:[-Gm.wW[0],-Gm.wW[1],0]},
+    {pts:Gm.wallS, fill:'#d8d2c4', edge:'#a89f90', n:[Gm.wW[0],Gm.wW[1],0]},
+    {pts:Gm.gableN,fill:'#ece7db', edge:'#a89f90', n:[-Gm.g[0],-Gm.g[1],0]},
+    {pts:Gm.gableS,fill:'#f0ebdf', edge:'#a89f90', n:[Gm.g[0],Gm.g[1],0]}
+  ];
+  faces.sort((x,y)=>(depth(y.pts)+(y.bias||0))-(depth(x.pts)+(x.bias||0)));
+  for(const f of faces){
+    if(!visible(f.n)) continue; // backface: normal points away from camera
+    if(f.mod){ drawModule(f.pts, f.front); }
+    else poly(f.pts,f.fill,f.edge,1.2);
+  }
+  // window on the visible gable
+  const wG = visible([-Gm.g[0],-Gm.g[1],0]) ? Gm.gableN
+         : visible([ Gm.g[0], Gm.g[1],0]) ? Gm.gableS : null;
+  if(wG){
+    const dir = nrm2([wG[0][0]-wG[1][0], wG[0][1]-wG[1][1]]); // horizontal dir along wall (±wW)
+    const cc=[(wG[0][0]+wG[1][0])/2,(wG[0][1]+wG[1][1])/2,1.18];
+    const hw=0.26, hz=0.27;
+    poly([[cc[0]+dir[0]*hw,cc[1]+dir[1]*hw,cc[2]+hz],[cc[0]-dir[0]*hw,cc[1]-dir[1]*hw,cc[2]+hz],
+          [cc[0]-dir[0]*hw,cc[1]-dir[1]*hw,cc[2]-hz],[cc[0]+dir[0]*hw,cc[1]+dir[1]*hw,cc[2]-hz]],
+         '#a8c8de','#f5f8fc',1.5);
+  }
+
+  // normal arrows
+  for(const [side,color] of [['west','#fbbf24'],['east','#f472b0']]){
+    const q = side===wSide?modA:modB;
+    const c=[(q[0][0]+q[2][0])/2,(q[0][1]+q[2][1])/2,(q[0][2]+q[2][2])/2+0.02];
+    const phi = res.sides[side].phi;
+    const nr = roofNormal(phi, a);
+    arrow3(c, nr, 0.75, 'rgba(148,163,184,.8)', 1.5, [5,4]);           // roof normal (dashed)
+    const tip = arrow3(c, res.sides[side].n, 1.05, color, 2.5);         // module normal
+    text(res.sides[side].facing.toFixed(1)+'°', tip[0]+(tip[0]<cam.cx? -30:30), tip[1]-8, color, 'bold 11px system-ui');
+  }
+
+  compass(560,108,82,{G, phiA:res.phiA, phiB:res.phiB,
+                     westFacing:res.sides.west.facing, eastFacing:res.sides.east.facing});
+
+  // ---- readouts ----
+  const f1=x=>x.toFixed(1)+'°', n3=v=>'('+v.map(x=>x.toFixed(3)).join(', ')+')';
+  for(const [k,pfx] of [['west','w'],['east','e']]){
+    const s=res.sides[k];
+    $('t'+pfx.toUpperCase()).textContent=sideLabel(s.phi);
+    $(''+pfx+'F').textContent=f1(s.facing)+'  '+cardinal(s.facing);
+    $(''+pfx+'T').textContent=f1(s.tilt);
+    $(''+pfx+'P').textContent=f1(s.phi)+'  '+cardinal(s.phi);
+    $(''+pfx+'N').textContent=n3(s.n);
+  }
+  $('f1').textContent='γ = acos(cos '+a+'° · cos '+b+'°) = '+res.gamma.toFixed(2)+'°   (effective tilt)';
+  $('f2').textContent='δ = atan(tan '+b+'° / sin '+a+'°) = '+res.delta.toFixed(2)+'°   (facing shift toward gable)';
+  $('f3').textContent='facing = roof facing ∓ δ → west '+res.sides.west.facing.toFixed(2)+'° , east '+res.sides.east.facing.toFixed(2)+'°';
+}
+
+// ---- two-way binding: range slider <-> number input ----
+const PARAMS = [
+  ['G', -180, 180], ['A', 5, 60], ['B', 0, 30], ['P', 8, 70]
+];
+for(const [k, min, max] of PARAMS){
+  const r = $('in'+k), n = $('in'+k+'n');
+  r.addEventListener('input', ()=>{ n.value = r.value; draw(); });
+  n.addEventListener('input', ()=>{
+    const v = parseFloat(n.value);
+    if(!isFinite(v)) return;                    // while clearing the box
+    if(v >= min && v <= max){ r.value = Math.round(v); draw(); }  // sync while in range
+  });
+  n.addEventListener('change', ()=>{
+    let v = parseFloat(n.value);
+    if(!isFinite(v)) v = +r.value;              // restore if left empty/invalid
+    n.value = Math.round(Math.min(max, Math.max(min, v)));
+    r.value = n.value; draw();
+  });
+}
+
+draw();
+</script>
+</body>
+</html>
